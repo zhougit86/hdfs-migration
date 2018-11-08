@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="hive.TBLS.persistence.dao.sdsMapper" >
+  <resultMap id="BaseResultMap" type="hive.TBLS.model.sds" >
+    <id column="SD_ID" property="sdId" jdbcType="BIGINT" />
+    <result column="CD_ID" property="cdId" jdbcType="BIGINT" />
+    <result column="INPUT_FORMAT" property="inputFormat" jdbcType="VARCHAR" />
+    <result column="IS_COMPRESSED" property="isCompressed" jdbcType="BIT" />
+    <result column="IS_STOREDASSUBDIRECTORIES" property="isStoredassubdirectories" jdbcType="BIT" />
+    <result column="LOCATION" property="location" jdbcType="VARCHAR" />
+    <result column="NUM_BUCKETS" property="numBuckets" jdbcType="INTEGER" />
+    <result column="OUTPUT_FORMAT" property="outputFormat" jdbcType="VARCHAR" />
+    <result column="SERDE_ID" property="serdeId" jdbcType="BIGINT" />
+  </resultMap>
+  <sql id="Base_Column_List" >
+    SD_ID, CD_ID, INPUT_FORMAT, IS_COMPRESSED, IS_STOREDASSUBDIRECTORIES, LOCATION, NUM_BUCKETS, 
+    OUTPUT_FORMAT, SERDE_ID
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from SDS
+    where SD_ID = #{sdId,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from SDS
+    where SD_ID = #{sdId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="hive.TBLS.model.sds" >
+    insert into SDS (SD_ID, CD_ID, INPUT_FORMAT, 
+      IS_COMPRESSED, IS_STOREDASSUBDIRECTORIES, LOCATION, 
+      NUM_BUCKETS, OUTPUT_FORMAT, SERDE_ID
+      )
+    values (#{sdId,jdbcType=BIGINT}, #{cdId,jdbcType=BIGINT}, #{inputFormat,jdbcType=VARCHAR}, 
+      #{isCompressed,jdbcType=BIT}, #{isStoredassubdirectories,jdbcType=BIT}, #{location,jdbcType=VARCHAR}, 
+      #{numBuckets,jdbcType=INTEGER}, #{outputFormat,jdbcType=VARCHAR}, #{serdeId,jdbcType=BIGINT}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="hive.TBLS.model.sds" >
+    insert into SDS
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="sdId != null" >
+        SD_ID,
+      </if>
+      <if test="cdId != null" >
+        CD_ID,
+      </if>
+      <if test="inputFormat != null" >
+        INPUT_FORMAT,
+      </if>
+      <if test="isCompressed != null" >
+        IS_COMPRESSED,
+      </if>
+      <if test="isStoredassubdirectories != null" >
+        IS_STOREDASSUBDIRECTORIES,
+      </if>
+      <if test="location != null" >
+        LOCATION,
+      </if>
+      <if test="numBuckets != null" >
+        NUM_BUCKETS,
+      </if>
+      <if test="outputFormat != null" >
+        OUTPUT_FORMAT,
+      </if>
+      <if test="serdeId != null" >
+        SERDE_ID,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="sdId != null" >
+        #{sdId,jdbcType=BIGINT},
+      </if>
+      <if test="cdId != null" >
+        #{cdId,jdbcType=BIGINT},
+      </if>
+      <if test="inputFormat != null" >
+        #{inputFormat,jdbcType=VARCHAR},
+      </if>
+      <if test="isCompressed != null" >
+        #{isCompressed,jdbcType=BIT},
+      </if>
+      <if test="isStoredassubdirectories != null" >
+        #{isStoredassubdirectories,jdbcType=BIT},
+      </if>
+      <if test="location != null" >
+        #{location,jdbcType=VARCHAR},
+      </if>
+      <if test="numBuckets != null" >
+        #{numBuckets,jdbcType=INTEGER},
+      </if>
+      <if test="outputFormat != null" >
+        #{outputFormat,jdbcType=VARCHAR},
+      </if>
+      <if test="serdeId != null" >
+        #{serdeId,jdbcType=BIGINT},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="hive.TBLS.model.sds" >
+    update SDS
+    <set >
+      <if test="cdId != null" >
+        CD_ID = #{cdId,jdbcType=BIGINT},
+      </if>
+      <if test="inputFormat != null" >
+        INPUT_FORMAT = #{inputFormat,jdbcType=VARCHAR},
+      </if>
+      <if test="isCompressed != null" >
+        IS_COMPRESSED = #{isCompressed,jdbcType=BIT},
+      </if>
+      <if test="isStoredassubdirectories != null" >
+        IS_STOREDASSUBDIRECTORIES = #{isStoredassubdirectories,jdbcType=BIT},
+      </if>
+      <if test="location != null" >
+        LOCATION = #{location,jdbcType=VARCHAR},
+      </if>
+      <if test="numBuckets != null" >
+        NUM_BUCKETS = #{numBuckets,jdbcType=INTEGER},
+      </if>
+      <if test="outputFormat != null" >
+        OUTPUT_FORMAT = #{outputFormat,jdbcType=VARCHAR},
+      </if>
+      <if test="serdeId != null" >
+        SERDE_ID = #{serdeId,jdbcType=BIGINT},
+      </if>
+    </set>
+    where SD_ID = #{sdId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="hive.TBLS.model.sds" >
+    update SDS
+    set CD_ID = #{cdId,jdbcType=BIGINT},
+      INPUT_FORMAT = #{inputFormat,jdbcType=VARCHAR},
+      IS_COMPRESSED = #{isCompressed,jdbcType=BIT},
+      IS_STOREDASSUBDIRECTORIES = #{isStoredassubdirectories,jdbcType=BIT},
+      LOCATION = #{location,jdbcType=VARCHAR},
+      NUM_BUCKETS = #{numBuckets,jdbcType=INTEGER},
+      OUTPUT_FORMAT = #{outputFormat,jdbcType=VARCHAR},
+      SERDE_ID = #{serdeId,jdbcType=BIGINT}
+    where SD_ID = #{sdId,jdbcType=BIGINT}
+  </update>
+</mapper>

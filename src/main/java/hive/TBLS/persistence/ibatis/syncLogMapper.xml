@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="hive.TBLS.persistence.dao.syncLogMapper">
+    <resultMap id="BaseResultMap" type="hive.TBLS.model.syncLog">
+        <id column="sync_id" property="syncId" jdbcType="INTEGER"/>
+        <result column="path" property="path" jdbcType="VARCHAR"/>
+        <result column="isDir" property="isdir" jdbcType="BIT"/>
+        <result column="isSynchronized" property="issynchronized" jdbcType="BIT"/>
+        <result column="mod_Time" property="modTime" jdbcType="TIMESTAMP"/>
+        <result column="sync_Time" property="syncTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+    sync_id, path, isDir, isSynchronized, mod_Time, sync_Time
+  </sql>
+    <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Integer">
+        select
+        <include refid="Base_Column_List"/>
+        from sync_log
+        where sync_id = #{syncId,jdbcType=INTEGER}
+    </select>
+
+    <select id="selectByTableDir" resultMap="BaseResultMap" parameterType="java.lang.String">
+        select
+        <include refid="Base_Column_List"/>
+        from sync_log
+        where path like concat(#{tableDir}, '/', '%')
+    </select>
+
+    <delete id="deleteSyncLogsByTableDir" parameterType="java.lang.String">
+        delete from sync_log
+        where path like concat(#{tableDir}, '/', '%')
+    </delete>
+
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from sync_log
+    where sync_id = #{syncId,jdbcType=INTEGER}
+  </delete>
+    <insert id="insert" parameterType="hive.TBLS.model.syncLog">
+    insert into sync_log (sync_id, path, isDir, 
+      isSynchronized, mod_Time, sync_Time
+      )
+    values (#{syncId,jdbcType=INTEGER}, #{path,jdbcType=VARCHAR}, #{isdir,jdbcType=BIT}, 
+      #{issynchronized,jdbcType=BIT}, #{modTime,jdbcType=TIMESTAMP}, #{syncTime,jdbcType=TIMESTAMP}
+      )
+  </insert>
+    <insert id="insertSelective" parameterType="hive.TBLS.model.syncLog">
+        insert into sync_log
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="syncId != null">
+                sync_id,
+            </if>
+            <if test="path != null">
+                path,
+            </if>
+            <if test="isdir != null">
+                isDir,
+            </if>
+            <if test="issynchronized != null">
+                isSynchronized,
+            </if>
+            <if test="modTime != null">
+                mod_Time,
+            </if>
+            <if test="syncTime != null">
+                sync_Time,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="syncId != null">
+                #{syncId,jdbcType=INTEGER},
+            </if>
+            <if test="path != null">
+                #{path,jdbcType=VARCHAR},
+            </if>
+            <if test="isdir != null">
+                #{isdir,jdbcType=BIT},
+            </if>
+            <if test="issynchronized != null">
+                #{issynchronized,jdbcType=BIT},
+            </if>
+            <if test="modTime != null">
+                #{modTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="syncTime != null">
+                #{syncTime,jdbcType=TIMESTAMP},
+            </if>
+        </trim>
+    </insert>
+    <update id="updateByPrimaryKeySelective" parameterType="hive.TBLS.model.syncLog">
+        update sync_log
+        <set>
+            <if test="path != null">
+                path = #{path,jdbcType=VARCHAR},
+            </if>
+            <if test="isdir != null">
+                isDir = #{isdir,jdbcType=BIT},
+            </if>
+            <if test="issynchronized != null">
+                isSynchronized = #{issynchronized,jdbcType=BIT},
+            </if>
+            <if test="modTime != null">
+                mod_Time = #{modTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="syncTime != null">
+                sync_Time = #{syncTime,jdbcType=TIMESTAMP},
+            </if>
+        </set>
+        where sync_id = #{syncId,jdbcType=INTEGER}
+    </update>
+    <update id="updateByPrimaryKey" parameterType="hive.TBLS.model.syncLog">
+    update sync_log
+    set path = #{path,jdbcType=VARCHAR},
+      isDir = #{isdir,jdbcType=BIT},
+      isSynchronized = #{issynchronized,jdbcType=BIT},
+      mod_Time = #{modTime,jdbcType=TIMESTAMP},
+      sync_Time = #{syncTime,jdbcType=TIMESTAMP}
+    where sync_id = #{syncId,jdbcType=INTEGER}
+  </update>
+</mapper>

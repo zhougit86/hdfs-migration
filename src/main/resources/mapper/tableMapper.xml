@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="hive.TBLS.persistence.dao.tableMapper" >
+  <resultMap id="BaseResultMap" type="hive.TBLS.model.table" >
+    <id column="TBL_ID" property="tblId" jdbcType="BIGINT" />
+    <result column="CREATE_TIME" property="createTime" jdbcType="INTEGER" />
+    <result column="DB_ID" property="dbId" jdbcType="BIGINT" />
+    <result column="LAST_ACCESS_TIME" property="lastAccessTime" jdbcType="INTEGER" />
+    <result column="OWNER" property="owner" jdbcType="VARCHAR" />
+    <result column="RETENTION" property="retention" jdbcType="INTEGER" />
+    <result column="SD_ID" property="sdId" jdbcType="BIGINT" />
+    <result column="TBL_NAME" property="tblName" jdbcType="VARCHAR" />
+    <result column="TBL_TYPE" property="tblType" jdbcType="VARCHAR" />
+    <result column="IS_REWRITE_ENABLED" property="isRewriteEnabled" jdbcType="BIT" />
+  </resultMap>
+  <resultMap id="ResultMapWithBLOBs" type="hive.TBLS.model.tableWithBLOBs" extends="BaseResultMap" >
+    <result column="VIEW_EXPANDED_TEXT" property="viewExpandedText" jdbcType="LONGVARCHAR" />
+    <result column="VIEW_ORIGINAL_TEXT" property="viewOriginalText" jdbcType="LONGVARCHAR" />
+  </resultMap>
+  <sql id="Base_Column_List" >
+    TBL_ID, CREATE_TIME, DB_ID, LAST_ACCESS_TIME, OWNER, RETENTION, SD_ID, TBL_NAME, 
+    TBL_TYPE, IS_REWRITE_ENABLED
+  </sql>
+  <sql id="Blob_Column_List" >
+    VIEW_EXPANDED_TEXT, VIEW_ORIGINAL_TEXT
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="ResultMapWithBLOBs" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from TBLS
+    where TBL_ID = #{tblId,jdbcType=BIGINT}
+  </select>
+  <select id="selectByTableName" resultMap="ResultMapWithBLOBs" parameterType="java.lang.String" >
+    select
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from TBLS
+    where TBL_NAME = #{tblName,jdbcType=VARCHAR}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from TBLS
+    where TBL_ID = #{tblId,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" parameterType="hive.TBLS.model.tableWithBLOBs" >
+    insert into TBLS (TBL_ID, CREATE_TIME, DB_ID, 
+      LAST_ACCESS_TIME, OWNER, RETENTION, 
+      SD_ID, TBL_NAME, TBL_TYPE, 
+      IS_REWRITE_ENABLED, VIEW_EXPANDED_TEXT, VIEW_ORIGINAL_TEXT
+      )
+    values (#{tblId,jdbcType=BIGINT}, #{createTime,jdbcType=INTEGER}, #{dbId,jdbcType=BIGINT}, 
+      #{lastAccessTime,jdbcType=INTEGER}, #{owner,jdbcType=VARCHAR}, #{retention,jdbcType=INTEGER}, 
+      #{sdId,jdbcType=BIGINT}, #{tblName,jdbcType=VARCHAR}, #{tblType,jdbcType=VARCHAR}, 
+      #{isRewriteEnabled,jdbcType=BIT}, #{viewExpandedText,jdbcType=LONGVARCHAR}, #{viewOriginalText,jdbcType=LONGVARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="hive.TBLS.model.tableWithBLOBs" >
+    insert into TBLS
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="tblId != null" >
+        TBL_ID,
+      </if>
+      <if test="createTime != null" >
+        CREATE_TIME,
+      </if>
+      <if test="dbId != null" >
+        DB_ID,
+      </if>
+      <if test="lastAccessTime != null" >
+        LAST_ACCESS_TIME,
+      </if>
+      <if test="owner != null" >
+        OWNER,
+      </if>
+      <if test="retention != null" >
+        RETENTION,
+      </if>
+      <if test="sdId != null" >
+        SD_ID,
+      </if>
+      <if test="tblName != null" >
+        TBL_NAME,
+      </if>
+      <if test="tblType != null" >
+        TBL_TYPE,
+      </if>
+      <if test="isRewriteEnabled != null" >
+        IS_REWRITE_ENABLED,
+      </if>
+      <if test="viewExpandedText != null" >
+        VIEW_EXPANDED_TEXT,
+      </if>
+      <if test="viewOriginalText != null" >
+        VIEW_ORIGINAL_TEXT,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="tblId != null" >
+        #{tblId,jdbcType=BIGINT},
+      </if>
+      <if test="createTime != null" >
+        #{createTime,jdbcType=INTEGER},
+      </if>
+      <if test="dbId != null" >
+        #{dbId,jdbcType=BIGINT},
+      </if>
+      <if test="lastAccessTime != null" >
+        #{lastAccessTime,jdbcType=INTEGER},
+      </if>
+      <if test="owner != null" >
+        #{owner,jdbcType=VARCHAR},
+      </if>
+      <if test="retention != null" >
+        #{retention,jdbcType=INTEGER},
+      </if>
+      <if test="sdId != null" >
+        #{sdId,jdbcType=BIGINT},
+      </if>
+      <if test="tblName != null" >
+        #{tblName,jdbcType=VARCHAR},
+      </if>
+      <if test="tblType != null" >
+        #{tblType,jdbcType=VARCHAR},
+      </if>
+      <if test="isRewriteEnabled != null" >
+        #{isRewriteEnabled,jdbcType=BIT},
+      </if>
+      <if test="viewExpandedText != null" >
+        #{viewExpandedText,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="viewOriginalText != null" >
+        #{viewOriginalText,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="hive.TBLS.model.tableWithBLOBs" >
+    update TBLS
+    <set >
+      <if test="createTime != null" >
+        CREATE_TIME = #{createTime,jdbcType=INTEGER},
+      </if>
+      <if test="dbId != null" >
+        DB_ID = #{dbId,jdbcType=BIGINT},
+      </if>
+      <if test="lastAccessTime != null" >
+        LAST_ACCESS_TIME = #{lastAccessTime,jdbcType=INTEGER},
+      </if>
+      <if test="owner != null" >
+        OWNER = #{owner,jdbcType=VARCHAR},
+      </if>
+      <if test="retention != null" >
+        RETENTION = #{retention,jdbcType=INTEGER},
+      </if>
+      <if test="sdId != null" >
+        SD_ID = #{sdId,jdbcType=BIGINT},
+      </if>
+      <if test="tblName != null" >
+        TBL_NAME = #{tblName,jdbcType=VARCHAR},
+      </if>
+      <if test="tblType != null" >
+        TBL_TYPE = #{tblType,jdbcType=VARCHAR},
+      </if>
+      <if test="isRewriteEnabled != null" >
+        IS_REWRITE_ENABLED = #{isRewriteEnabled,jdbcType=BIT},
+      </if>
+      <if test="viewExpandedText != null" >
+        VIEW_EXPANDED_TEXT = #{viewExpandedText,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="viewOriginalText != null" >
+        VIEW_ORIGINAL_TEXT = #{viewOriginalText,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where TBL_ID = #{tblId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="hive.TBLS.model.tableWithBLOBs" >
+    update TBLS
+    set CREATE_TIME = #{createTime,jdbcType=INTEGER},
+      DB_ID = #{dbId,jdbcType=BIGINT},
+      LAST_ACCESS_TIME = #{lastAccessTime,jdbcType=INTEGER},
+      OWNER = #{owner,jdbcType=VARCHAR},
+      RETENTION = #{retention,jdbcType=INTEGER},
+      SD_ID = #{sdId,jdbcType=BIGINT},
+      TBL_NAME = #{tblName,jdbcType=VARCHAR},
+      TBL_TYPE = #{tblType,jdbcType=VARCHAR},
+      IS_REWRITE_ENABLED = #{isRewriteEnabled,jdbcType=BIT},
+      VIEW_EXPANDED_TEXT = #{viewExpandedText,jdbcType=LONGVARCHAR},
+      VIEW_ORIGINAL_TEXT = #{viewOriginalText,jdbcType=LONGVARCHAR}
+    where TBL_ID = #{tblId,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="hive.TBLS.model.table" >
+    update TBLS
+    set CREATE_TIME = #{createTime,jdbcType=INTEGER},
+      DB_ID = #{dbId,jdbcType=BIGINT},
+      LAST_ACCESS_TIME = #{lastAccessTime,jdbcType=INTEGER},
+      OWNER = #{owner,jdbcType=VARCHAR},
+      RETENTION = #{retention,jdbcType=INTEGER},
+      SD_ID = #{sdId,jdbcType=BIGINT},
+      TBL_NAME = #{tblName,jdbcType=VARCHAR},
+      TBL_TYPE = #{tblType,jdbcType=VARCHAR},
+      IS_REWRITE_ENABLED = #{isRewriteEnabled,jdbcType=BIT}
+    where TBL_ID = #{tblId,jdbcType=BIGINT}
+  </update>
+</mapper>
