@@ -33,17 +33,18 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.Mapper.Context;
 
 import org.apache.parquet.Log;
+import org.apache.parquet.Preconditions;
+import org.apache.parquet.column.ParquetProperties;
 import org.apache.parquet.example.data.Group;
 import org.apache.parquet.example.data.simple.SimpleGroup;
-import org.apache.parquet.hadoop.ParquetInputFormat;
-import org.apache.parquet.hadoop.ParquetOutputFormat;
+import org.apache.parquet.hadoop.*;
+import org.apache.parquet.hadoop.api.WriteSupport;
 import org.apache.parquet.hadoop.codec.CodecConfig;
 import org.apache.parquet.hadoop.example.GroupReadSupport;
 import org.apache.parquet.hadoop.example.GroupWriteSupport;
 import org.apache.parquet.hadoop.example.ExampleInputFormat;
 import org.apache.parquet.hadoop.example.ExampleOutputFormat;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
-import org.apache.parquet.hadoop.ParquetFileReader;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.hadoop.util.ContextUtil;
 import org.apache.parquet.schema.MessageType;
@@ -137,15 +138,23 @@ public class TestReadWriteParquet  extends Configured implements Tool {
         protected void setup(Context context) throws IOException, InterruptedException{
             InputSplit inputSplit = context.getInputSplit();
             String fileName = ((FileSplit) inputSplit).getPath().toString();
+
+            ParquetMetadata readFooter;
+            readFooter= ParquetFileReader.readFooter(context.getConfiguration(), ((FileSplit) inputSplit).getPath());
+            final MessageType schema = readFooter.getFileMetaData().getSchema();
+
             String[] sliceList = fileName.split("/");
             final String  lastString = fileName.substring(FileInputFormat.getInputPaths(context)[0].toString().length()+1);
             LOG.info("setup:"+lastString);
+
 
 //            final Path baseOutputPath = FileOutputFormat.getOutputPath(context);
 //            // output file name
 //            final Path outputFilePath = new Path(baseOutputPath, filenameKey);
 
             MyfileOutputFormat<Group> tof = new MyfileOutputFormat<Group>() {
+                private MySupport writeSupport;
+
                 private CompressionCodecName getCodec(TaskAttemptContext taskAttemptContext) {
                     return CodecConfig.from(taskAttemptContext).getCodec();
                 }
@@ -157,6 +166,23 @@ public class TestReadWriteParquet  extends Configured implements Tool {
                     Path file = this.getDefaultWorkFile(taskAttemptContext, extension,lastString);
                     LOG.info("Path:"+file);
                     return this.getRecordWriter(conf, file, codec);
+                }
+                public MySupport getWriteSupport(Configuration configuration) {
+                    if(this.writeSupport != null) {
+                        return this.writeSupport;
+                    } else {
+                        Class writeSupportClass = getWriteSupportClass(configuration);
+
+                        try {
+                            MySupport ms= (MySupport)((Class) Preconditions.checkNotNull(writeSupportClass, "writeSupportClass")).newInstance();
+                            ms.setSchema(schema);
+                            return ms;
+                        } catch (InstantiationException var4) {
+                            throw new BadConfigurationException("could not instantiate write support class: " + writeSupportClass, var4);
+                        } catch (IllegalAccessException var5) {
+                            throw new BadConfigurationException("could not instantiate write support class: " + writeSupportClass, var5);
+                        }
+                    }
                 }
             };
             writer = tof.getRecordWriter(context);
@@ -195,31 +221,6 @@ public class TestReadWriteParquet  extends Configured implements Tool {
         FileSystem fileSys= FileSystem.get(new URI(DestHdfs),getConf());
         RemoteIterator<LocatedFileStatus> it = fileSys.listFiles(new Path(inputFile), true);
 
-        ParquetMetadata readFooter;
-        while(it.hasNext()) {
-            FileStatus fs = it.next();
-            if(fs.isFile()) {
-                parquetFilePath = fs.getPath();
-                LOG.info("Getting schema from " + parquetFilePath);
-
-                try{
-                    readFooter= ParquetFileReader.readFooter(getConf(), parquetFilePath);
-                    MessageType schema = readFooter.getFileMetaData().getSchema();
-                    LOG.info(schema);
-                    GroupWriteSupport.setSchema(schema, getConf());
-                    break;
-                }catch (Exception e){
-                    e.printStackTrace();
-                }
-            }
-        }
-        if(parquetFilePath == null) {
-            LOG.error("No file found for " + inputFile);
-            return 1;
-        }
-
-
-
 
         //设置map的类和设置任务
         Job job = Job.getInstance(getConf(), "file Compress");
@@ -240,7 +241,7 @@ public class TestReadWriteParquet  extends Configured implements Tool {
 //        GroupWriteSupport.setSchema(schema, getConf());
 //        ParquetOutputFormat.setValidation(getConf(),false);
 //        ParquetOutputFormat.setEnableDictionary(job,false);
-        MyfileOutputFormat.setWriteSupportClass(job, GroupWriteSupport.class);
+        MyfileOutputFormat.setWriteSupportClass(job, MySupport.class);
         job.setOutputFormatClass(NullOutputFormat.class);
 
         //设置压缩格式
@@ -270,6 +271,7 @@ public class TestReadWriteParquet  extends Configured implements Tool {
         conf.set("mapred.textoutputformat.ignoreseparator", "true");
         conf.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
         conf.set("mapreduce.framework.name","local");
+//        conf.set("parquet.writer.version","v1");
         try {
             int res = ToolRunner.run(conf, new TestReadWriteParquet(), args);
 //            for(Map.Entry<String, String> entry: TestReadWriteParquet.map.entrySet()) {
