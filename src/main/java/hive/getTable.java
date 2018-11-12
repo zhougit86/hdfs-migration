@@ -133,6 +133,7 @@ public class getTable{
 
         //删除tmp目录
         shellString = "hadoop fs -rmr " + destAppendix+location;
+        System.out.println(shellString);
         Process process = Runtime.getRuntime().exec(shellString);
         try{
             int exitValue = process.waitFor();
