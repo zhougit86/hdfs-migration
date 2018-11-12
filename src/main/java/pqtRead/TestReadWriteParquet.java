@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -128,7 +129,14 @@ public class TestReadWriteParquet  extends Configured implements Tool {
             String fileName = ((FileSplit) inputSplit).getPath().toString();
 
             Configuration conf = context.getConfiguration();
-            Date startTime = new Date(conf.get("yonghui.startTime"));
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            Date startTime = null;
+            try{
+                startTime = sdf.parse(conf.get("yonghui.startTime"));
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+
             FileSystem fSys = null;
             try{
                 fSys = FileSystem.get(new URI(conf.get("yonghui.hdfs")),conf);
@@ -295,7 +303,12 @@ public class TestReadWriteParquet  extends Configured implements Tool {
         conf.set("mapreduce.framework.name","local");
 //        conf.set("parquet.writer.version","v1");
 
-        conf.set("yonghui.startTime",new Date().toString());
+        Date startTime = new Date();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String stStr =sdf.format(startTime);
+//        System.out.println(stStr);
+//        System.out.println(sdf.parse(stStr));
+        conf.set("yonghui.startTime",sdf.format(startTime));
         conf.set("yonghui.hdfs",args[0]);
         conf.set("yonghui.firstTime","true");
 //        TestReadWriteParquet.setStartTime();
