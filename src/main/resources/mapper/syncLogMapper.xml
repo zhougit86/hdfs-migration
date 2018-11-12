@@ -18,7 +18,12 @@
         from sync_log
         where sync_id = #{syncId,jdbcType=INTEGER}
     </select>
-
+    <select id="selectByTableName" resultMap="BaseResultMap" parameterType="java.lang.String">
+        select
+        <include refid="Base_Column_List"/>
+        from sync_log
+        where path = #{path,jdbcType=VARCHAR}
+    </select>
     <select id="selectByTableDir" resultMap="BaseResultMap" parameterType="java.lang.String">
         select
         <include refid="Base_Column_List"/>

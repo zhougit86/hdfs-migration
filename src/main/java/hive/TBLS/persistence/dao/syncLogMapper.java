@@ -13,6 +13,8 @@ public interface syncLogMapper {
 
     syncLog selectByPrimaryKey(Integer syncId);
 
+    syncLog selectByTableName(String pathName);
+
     int updateByPrimaryKeySelective(syncLog record);
 
     int updateByPrimaryKey(syncLog record);

@@ -10,31 +10,38 @@ import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
 
-public class SyncLogger {
+public class SyncLoggerOrm {
     SqlSessionFactory sqlSessionFactory;
     Reader reader;
     SqlSession session;
     syncLogMapper mapper;
     DirInfoHandler dirInfoHandler;
 
-    public boolean Init(DirInfoHandler dirInfoHandler) {
+    public SyncLoggerOrm(){
         try {
             reader = Resources.getResourceAsReader("mybatis-config.xml");
         } catch (IOException e) {
             e.printStackTrace();
-            return false;
         }
         sqlSessionFactory = new SqlSessionFactoryBuilder().build(reader, "development");
         session = sqlSessionFactory.openSession();
         mapper = session.getMapper(syncLogMapper.class);
+        System.out.println("Init sync_log SqlSession success");
+    }
+
+    public boolean Init(DirInfoHandler dirInfoHandler) {
+
         this.dirInfoHandler = dirInfoHandler;
 
-        System.out.println("Init sync_log SqlSession success");
+
         return true;
+    }
+
+    public int UpdateItem(syncLog item){
+        return mapper.updateByPrimaryKeySelective(item);
     }
 
     public boolean UpdateSyncInfo(String tableDir) {
@@ -66,12 +73,31 @@ public class SyncLogger {
         return true;
     }
 
+    public boolean initSyncLog(String name,Date startTime){
+        syncLog log = new syncLog();
+        log.setPath(name);
+        log.setSyncTime(startTime);
+        int result = mapper.insert(log);
+        if(result != 1){
+            System.out.println("insertDirInfoIntoSyncLog failed! path = " + log.getPath());
+            return false;
+        }
+
+
+        session.commit();
+        return true;
+    }
+
     private void initSyncLogByDirInfo(syncLog log, dirInfo dirInfo) {
         log.setPath(dirInfo.getPath());
         log.setIsdir(dirInfo.getIsDir());
         log.setIssynchronized(true);
         log.setModTime(dirInfo.getModTime());
         log.setSyncTime(new Date());
+    }
+
+    public syncLog getSyncLogByName(String name){
+        return mapper.selectByTableName(name);
     }
 
     public int deleteSyncLogsByTableDir(String tableDir) {
@@ -97,11 +123,11 @@ public class SyncLogger {
     }
 
     public static void main(String[] args) throws IOException {
-        SyncLogger syncLogger = new SyncLogger();
+        SyncLoggerOrm syncLoggerOrm = new SyncLoggerOrm();
         DirInfoHandler dirInfoHandler = new DirInfoHandler();
         dirInfoHandler.Init();
-        syncLogger.Init(dirInfoHandler);
-        syncLogger.UpdateSyncInfo("/warehouse/dim/dim_shop");
+        syncLoggerOrm.Init(dirInfoHandler);
+        syncLoggerOrm.UpdateSyncInfo("/warehouse/dim/dim_shop");
     }
 }
 

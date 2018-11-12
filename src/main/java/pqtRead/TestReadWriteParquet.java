@@ -4,7 +4,9 @@ import static java.lang.Thread.sleep;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.text.NumberFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,6 +56,28 @@ import org.apache.parquet.schema.Type;
 public class TestReadWriteParquet  extends Configured implements Tool {
     private static final Log LOG = Log.getLog(TestReadWriteParquet.class);
     public static final ConcurrentHashMap<String,String> map = new ConcurrentHashMap();
+    private static Date startTime;
+    private static FileSystem fSys;
+    private static boolean firstTime = false;
+
+
+    public static void setFirstTime(boolean firstTime1){
+        firstTime = firstTime1;
+    }
+
+    public static void setStartTime(Date Time){
+        startTime= Time;
+    }
+
+    public static void initFileSys(String hdfs,Configuration conf1){
+        try{
+            fSys = FileSystem.get(new URI(hdfs),conf1);
+        }catch (URISyntaxException e){
+            e.printStackTrace();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
 
     public static class MyfileOutputFormat<T> extends ParquetOutputFormat<T> {
         private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance();
@@ -139,18 +163,33 @@ public class TestReadWriteParquet  extends Configured implements Tool {
             InputSplit inputSplit = context.getInputSplit();
             String fileName = ((FileSplit) inputSplit).getPath().toString();
 
+            Path SplitPath = ((FileSplit) inputSplit).getPath();
+            FileStatus fStatus = fSys.getFileStatus(SplitPath);
+            Date fileModTime = new Date(fStatus.getModificationTime());
+
+//            System.out.println(fileModTime.compareTo(startTime));
+//            System.out.println(startTime.compareTo(fileModTime));
+
+            LOG.info(SplitPath+" modifytime: " + fileModTime.toString()+" starttime: " + startTime.toString());
+
             ParquetMetadata readFooter;
-            readFooter= ParquetFileReader.readFooter(context.getConfiguration(), ((FileSplit) inputSplit).getPath());
+            readFooter= ParquetFileReader.readFooter(context.getConfiguration(), SplitPath);
             final MessageType schema = readFooter.getFileMetaData().getSchema();
 
             String[] sliceList = fileName.split("/");
             final String  lastString = fileName.substring(FileInputFormat.getInputPaths(context)[0].toString().length()+1);
             LOG.info("setup:"+lastString);
 
-
 //            final Path baseOutputPath = FileOutputFormat.getOutputPath(context);
 //            // output file name
 //            final Path outputFilePath = new Path(baseOutputPath, filenameKey);
+
+            //如果开始时间比较晚，且不是首次跑，就不用跑了
+            if(startTime.after(fileModTime) && !firstTime ){
+                LOG.info("no need to setup");
+                writer = null;
+                return;
+            }
 
             MyfileOutputFormat<Group> tof = new MyfileOutputFormat<Group>() {
                 private MySupport writeSupport;
@@ -190,6 +229,10 @@ public class TestReadWriteParquet  extends Configured implements Tool {
 
         @Override
         public void map(LongWritable key, Group value, Context context) throws IOException, InterruptedException {
+            //如果没有初始化就不用跑了
+            if(writer==null){
+                return;
+            }
             try{
 //                context.write(new Text("aaa"), value);
                 writer.write(null, value);
@@ -201,6 +244,9 @@ public class TestReadWriteParquet  extends Configured implements Tool {
         @Override
         protected void cleanup(Context context) throws IOException,
                 InterruptedException {
+            if(writer==null){
+                return;
+            }
             writer.close(context);
         }
     }
@@ -272,6 +318,10 @@ public class TestReadWriteParquet  extends Configured implements Tool {
         conf.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
         conf.set("mapreduce.framework.name","local");
 //        conf.set("parquet.writer.version","v1");
+
+        TestReadWriteParquet.setStartTime(new Date());
+        TestReadWriteParquet.initFileSys(args[0],conf);
+        TestReadWriteParquet.setFirstTime(true);
         try {
             int res = ToolRunner.run(conf, new TestReadWriteParquet(), args);
 //            for(Map.Entry<String, String> entry: TestReadWriteParquet.map.entrySet()) {
