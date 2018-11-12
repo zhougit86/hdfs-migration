@@ -87,9 +87,12 @@ public class getTable{
             System.out.println(sLog.getSyncTime());
         }
 
-        TestReadWriteParquet.setStartTime(startTime);
-        TestReadWriteParquet.initFileSys(fuzhouHdfs,conf);
-        TestReadWriteParquet.setFirstTime(firstRun);
+//        TestReadWriteParquet.setStartTime(startTime);
+//        TestReadWriteParquet.initFileSys(fuzhouHdfs,conf);
+//        TestReadWriteParquet.setFirstTime(firstRun);
+        conf.set("yonghui.startTime",startTime.toString());
+        conf.set("yonghui.hdfs",fuzhouHdfs);
+        conf.set("yonghui.firstTime",firstRun?"true":"false");
 
         //获取压缩MR任务的参数
         String[] compressArg = new String[]{fuzhouHdfs, location, destAppendix+location ,"gzip" };

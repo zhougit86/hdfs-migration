@@ -55,29 +55,22 @@ import org.apache.parquet.schema.Type;
 
 public class TestReadWriteParquet  extends Configured implements Tool {
     private static final Log LOG = Log.getLog(TestReadWriteParquet.class);
-    public static final ConcurrentHashMap<String,String> map = new ConcurrentHashMap();
-    private static Date startTime;
-    private static FileSystem fSys;
-    private static boolean firstTime = false;
-
-
-    public static void setFirstTime(boolean firstTime1){
-        firstTime = firstTime1;
-    }
-
-    public static void setStartTime(Date Time){
-        startTime= Time;
-    }
-
-    public static void initFileSys(String hdfs,Configuration conf1){
-        try{
-            fSys = FileSystem.get(new URI(hdfs),conf1);
-        }catch (URISyntaxException e){
-            e.printStackTrace();
-        }catch (IOException e){
-            e.printStackTrace();
-        }
-    }
+//    private static Date startTime;
+//    private static FileSystem fSys;
+//    private static boolean firstTime = false;
+//
+//
+//    public static void setFirstTime(boolean firstTime1){
+//        firstTime = firstTime1;
+//    }
+//
+//    public static void setStartTime(Date Time){
+//        startTime= Time;
+//    }
+//
+//    public static void initFileSys(String hdfs,Configuration conf1){
+//
+//    }
 
     public static class MyfileOutputFormat<T> extends ParquetOutputFormat<T> {
         private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance();
@@ -123,35 +116,6 @@ public class TestReadWriteParquet  extends Configured implements Tool {
         }
     }
 
-//    public static class filePartitioner extends Partitioner<Text,Text> {
-//        private static int fileNumber = 0;
-//        public static HashMap<String,Integer> fileDist = new HashMap();
-//        public static int initMap(FileStatus[] listStatus){
-//            LOG.info("contains files:" + listStatus.length);
-//
-//            for (FileStatus f: listStatus){
-////                System.out.println("partxiaoxiao"+f.getLen()+f);
-//                if (f.getLen()==0){
-//                    continue;
-//                }
-//                String TaskId = String.valueOf(fileNumber);
-//
-//                String[] sliceList = f.getPath().toString().split("/");
-//                String lastString = sliceList[sliceList.length-1];
-//                LOG.info(TaskId +"____"+lastString);
-////                map.putIfAbsent(TaskId,lastString);
-//
-//                fileDist.put(f.getPath().toString(),fileNumber++);
-//            }
-//            return fileNumber;
-//        }
-//        @Override
-//        public int getPartition(Text key,Text value,int numP){
-//            Integer fileId = fileDist.get(key.toString());
-//            return fileId==null?fileNumber:fileId;
-//        }
-//    }
-
     /*
      * Read a Parquet record, write a Parquet record
      */
@@ -159,9 +123,21 @@ public class TestReadWriteParquet  extends Configured implements Tool {
         private RecordWriter<Void, Group> writer;
 
         @Override
-        protected void setup(Context context) throws IOException, InterruptedException{
+        protected void setup(Context context) throws IOException, InterruptedException {
             InputSplit inputSplit = context.getInputSplit();
             String fileName = ((FileSplit) inputSplit).getPath().toString();
+
+            Configuration conf = context.getConfiguration();
+            Date startTime = new Date(conf.get("yonghui.startTime"));
+            FileSystem fSys = null;
+            try{
+                fSys = FileSystem.get(new URI(conf.get("yonghui.hdfs")),conf);
+            }catch (URISyntaxException e){
+                e.printStackTrace();
+            }
+
+
+            boolean firstTime =  conf.get("yonghui.firstTime").equals("true")?true:false;
 
             Path SplitPath = ((FileSplit) inputSplit).getPath();
             FileStatus fStatus = fSys.getFileStatus(SplitPath);
@@ -300,7 +276,7 @@ public class TestReadWriteParquet  extends Configured implements Tool {
         LOG.info("Output compression: " + codec);
         MyfileOutputFormat.setCompression(job, codec);
 
-        //设置输入输出的路径
+        //todo 设置输入输出的路径
         FileInputFormat.setInputPaths(job, new Path(DestHdfs+inputFile));
         if (fileSys.exists(new Path(DestHdfs+outputFile))){
             LOG.info("the output already Exists");
@@ -319,9 +295,12 @@ public class TestReadWriteParquet  extends Configured implements Tool {
         conf.set("mapreduce.framework.name","local");
 //        conf.set("parquet.writer.version","v1");
 
-        TestReadWriteParquet.setStartTime(new Date());
-        TestReadWriteParquet.initFileSys(args[0],conf);
-        TestReadWriteParquet.setFirstTime(true);
+        conf.set("yonghui.startTime",new Date().toString());
+        conf.set("yonghui.hdfs",args[0]);
+        conf.set("yonghui.firstTime","true");
+//        TestReadWriteParquet.setStartTime();
+//        TestReadWriteParquet.initFileSys(args[0],conf);
+//        TestReadWriteParquet.setFirstTime(true);
         try {
             int res = ToolRunner.run(conf, new TestReadWriteParquet(), args);
 //            for(Map.Entry<String, String> entry: TestReadWriteParquet.map.entrySet()) {
