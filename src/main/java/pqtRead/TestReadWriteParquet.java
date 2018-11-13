@@ -137,7 +137,8 @@ public class TestReadWriteParquet  extends Configured implements Tool {
             readFooter= ParquetFileReader.readFooter(context.getConfiguration(), SplitPath);
             final MessageType schema = readFooter.getFileMetaData().getSchema();
 
-            final String pathWithDir = fileName.substring(FileInputFormat.getInputPaths(context)[0].toString().length()+1) + "*" + conf.get("yonghui.hdfs");
+            final String pathWithDir = fileName.substring(FileInputFormat.getInputPaths(context)[0].toString().length()+1)
+                    + "*" + conf.get("yonghui.hdfs") + "*" +sdf.format(fileModTime);
 
 
             //如果开始时间比较晚，且不是首次跑，就不用跑了
