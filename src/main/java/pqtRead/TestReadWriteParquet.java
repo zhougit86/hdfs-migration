@@ -79,7 +79,7 @@ public class TestReadWriteParquet  extends Configured implements Tool {
 
             StringBuilder result = new StringBuilder();
             result.append(name);
-            result.append('*');
+            result.append('$');
             result.append(NUMBER_FORMAT.format((long)partition));
             result.append(extension);
             return result.toString();
@@ -108,7 +108,7 @@ public class TestReadWriteParquet  extends Configured implements Tool {
 
             //获取时间
             Configuration conf = context.getConfiguration();
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
             Date startTime = null;
             try{
                 startTime = sdf.parse(conf.get("yonghui.startTime"));
@@ -137,8 +137,10 @@ public class TestReadWriteParquet  extends Configured implements Tool {
             readFooter= ParquetFileReader.readFooter(context.getConfiguration(), SplitPath);
             final MessageType schema = readFooter.getFileMetaData().getSchema();
 
+
             final String pathWithDir = fileName.substring(FileInputFormat.getInputPaths(context)[0].toString().length()+1)
-                    + "*" + conf.get("yonghui.hdfs") + "*" +sdf.format(fileModTime);
+                    + "$" + conf.get("yonghui.startTime")
+                    + "$" +sdf.format(fileModTime);
 
 
             //如果开始时间比较晚，且不是首次跑，就不用跑了
@@ -274,7 +276,7 @@ public class TestReadWriteParquet  extends Configured implements Tool {
 //        conf.set("parquet.writer.version","v1");
 
         Date startTime = new Date();
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
         String stStr =sdf.format(startTime);
 //        System.out.println(stStr);
 //        System.out.println(sdf.parse(stStr));

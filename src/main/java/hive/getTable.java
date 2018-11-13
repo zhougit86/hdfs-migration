@@ -77,7 +77,7 @@ public class getTable{
         syncLog sLog = syncOrm.getSyncLogByName(tableName);
 
         //如果首次运行则使用starttime,否则使用数据库中上次任务执行的时间
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
         if(sLog==null) {
             firstRun = true;
             conf.set("yonghui.startTime",sdf.format(startTime)  );
