@@ -117,6 +117,7 @@ public class getTable{
             Process process = Runtime.getRuntime().exec(shellString);
             int exitValue = process.waitFor();
             if (exitValue!=0){
+                System.out.println("Distcp Failure");
                 deleteTempDir(location);
                 System.exit(1);
             }

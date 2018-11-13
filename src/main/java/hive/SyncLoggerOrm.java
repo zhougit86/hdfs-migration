@@ -41,7 +41,9 @@ public class SyncLoggerOrm {
     }
 
     public int UpdateItem(syncLog item){
-        return mapper.updateByPrimaryKeySelective(item);
+        int updateNum = mapper.updateByPrimaryKeySelective(item);
+        session.commit();
+        return updateNum;
     }
 
     public boolean UpdateSyncInfo(String tableDir) {
