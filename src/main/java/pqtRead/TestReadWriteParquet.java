@@ -56,22 +56,6 @@ import org.apache.parquet.schema.Type;
 
 public class TestReadWriteParquet  extends Configured implements Tool {
     private static final Log LOG = Log.getLog(TestReadWriteParquet.class);
-//    private static Date startTime;
-//    private static FileSystem fSys;
-//    private static boolean firstTime = false;
-//
-//
-//    public static void setFirstTime(boolean firstTime1){
-//        firstTime = firstTime1;
-//    }
-//
-//    public static void setStartTime(Date Time){
-//        startTime= Time;
-//    }
-//
-//    public static void initFileSys(String hdfs,Configuration conf1){
-//
-//    }
 
     public static class MyfileOutputFormat<T> extends ParquetOutputFormat<T> {
         private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance();
@@ -83,7 +67,6 @@ public class TestReadWriteParquet  extends Configured implements Tool {
         public RecordWriter<Void, T> getRecordWriter(TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
             Configuration conf = ContextUtil.getConfiguration(taskAttemptContext);
             CompressionCodecName codec = this.getCodec(taskAttemptContext);
-//            String extension = codec.getExtension() + ".parquet";
             String extension = codec.getExtension();
             Path file = this.getDefaultWorkFile(taskAttemptContext, extension);
 
@@ -93,14 +76,11 @@ public class TestReadWriteParquet  extends Configured implements Tool {
         public static synchronized String getUniqueFile(TaskAttemptContext context, String name, String extension){
             TaskID taskId = context.getTaskAttemptID().getTaskID();
             int partition = taskId.getId();
-//            String fileName =map.get(partition);
-//            LOG.info(context)
 
             StringBuilder result = new StringBuilder();
             result.append(name);
-//            result.append("#$#");
-//            result.append(TaskID.getRepresentingCharacter(taskId.getTaskType()));
-            result.append('_');
+
+            result.append('*');
             result.append(NUMBER_FORMAT.format((long)partition));
             result.append(extension);
             return result.toString();
@@ -111,9 +91,8 @@ public class TestReadWriteParquet  extends Configured implements Tool {
             FileOutputCommitter committer = (FileOutputCommitter)this.getOutputCommitter(context);
             String JobPath = committer.getJobAttemptPath(context).toString();
             JobPath = JobPath.substring(0,JobPath.indexOf("_temporary"));
-            LOG.info("path"+JobPath);
+            LOG.info("*****yonghui*****:Output path: "+JobPath);
             return new Path(JobPath, getUniqueFile(context, actualLocation, extension));
-//            return new Path(committer.getWorkPath(), getUniqueFile(context, getOutputName(context), extension));
         }
     }
 
@@ -128,6 +107,7 @@ public class TestReadWriteParquet  extends Configured implements Tool {
             InputSplit inputSplit = context.getInputSplit();
             String fileName = ((FileSplit) inputSplit).getPath().toString();
 
+            //获取时间
             Configuration conf = context.getConfiguration();
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             Date startTime = null;
@@ -136,7 +116,9 @@ public class TestReadWriteParquet  extends Configured implements Tool {
             }catch (Exception e){
                 e.printStackTrace();
             }
+            boolean firstTime =  conf.get("yonghui.firstTime").equals("true")?true:false;
 
+            //获取文件时间
             FileSystem fSys = null;
             try{
                 fSys = FileSystem.get(new URI(conf.get("yonghui.hdfs")),conf);
@@ -144,33 +126,24 @@ public class TestReadWriteParquet  extends Configured implements Tool {
                 e.printStackTrace();
             }
 
-
-            boolean firstTime =  conf.get("yonghui.firstTime").equals("true")?true:false;
-
             Path SplitPath = ((FileSplit) inputSplit).getPath();
             FileStatus fStatus = fSys.getFileStatus(SplitPath);
             Date fileModTime = new Date(fStatus.getModificationTime());
 
-//            System.out.println(fileModTime.compareTo(startTime));
-//            System.out.println(startTime.compareTo(fileModTime));
 
-            LOG.info(SplitPath+" modifytime: " + fileModTime.toString()+" starttime: " + startTime.toString());
+            LOG.info("*****yonghui*****:"+SplitPath+" modifytime: " + fileModTime.toString()+" starttime: " + startTime.toString());
 
+            //获取schema和包含路径名的文件名
             ParquetMetadata readFooter;
             readFooter= ParquetFileReader.readFooter(context.getConfiguration(), SplitPath);
             final MessageType schema = readFooter.getFileMetaData().getSchema();
 
-            String[] sliceList = fileName.split("/");
-            final String  lastString = fileName.substring(FileInputFormat.getInputPaths(context)[0].toString().length()+1);
-            LOG.info("setup:"+lastString);
+            final String pathWithDir = fileName.substring(FileInputFormat.getInputPaths(context)[0].toString().length()+1);
 
-//            final Path baseOutputPath = FileOutputFormat.getOutputPath(context);
-//            // output file name
-//            final Path outputFilePath = new Path(baseOutputPath, filenameKey);
 
             //如果开始时间比较晚，且不是首次跑，就不用跑了
             if(startTime.after(fileModTime) && !firstTime ){
-                LOG.info("no need to setup");
+                LOG.info("*****yonghui*****:no need to setup");
                 writer = null;
                 return;
             }
@@ -186,8 +159,8 @@ public class TestReadWriteParquet  extends Configured implements Tool {
                     Configuration conf = ContextUtil.getConfiguration(taskAttemptContext);
                     CompressionCodecName codec = this.getCodec(taskAttemptContext);
                     String extension = codec.getExtension() ;
-                    Path file = this.getDefaultWorkFile(taskAttemptContext, extension,lastString);
-                    LOG.info("Path:"+file);
+                    Path file = this.getDefaultWorkFile(taskAttemptContext, extension, pathWithDir);
+                    LOG.info("*****yonghui*****:Original Path: "+file);
                     return this.getRecordWriter(conf, file, codec);
                 }
                 public MySupport getWriteSupport(Configuration configuration) {
@@ -245,11 +218,8 @@ public class TestReadWriteParquet  extends Configured implements Tool {
         String outputFile = args[2];
         String compression = (args.length > 3) ? args[3] : "none";
 
-        //读取avro的metadata
-        Path parquetFilePath = null;
         // Find a file in case a directory was passed
         FileSystem fileSys= FileSystem.get(new URI(DestHdfs),getConf());
-        RemoteIterator<LocatedFileStatus> it = fileSys.listFiles(new Path(inputFile), true);
 
 
         //设置map的类和设置任务

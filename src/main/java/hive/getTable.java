@@ -13,12 +13,9 @@ import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import pqtRead.TestReadWriteParquet;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.io.Reader;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.Map;
 
 class HiveMetaQuerier{
     static SqlSessionFactory sqlSessionFactory;
@@ -50,7 +47,6 @@ class HiveMetaQuerier{
 
         return location;
     }
-
 }
 
 public class getTable{
@@ -67,7 +63,7 @@ public class getTable{
     }
 
     public static void main(String[] args) throws IOException{
-        //获取当前时间，当需要保存的时候
+        //获取当前时间，当需要保存的时候则刷新数据库
         Date startTime = new Date();
         System.out.println(startTime);
 
@@ -81,16 +77,17 @@ public class getTable{
         SyncLoggerOrm syncOrm = new SyncLoggerOrm();
         syncLog sLog = syncOrm.getSyncLogByName(tableName);
 
+        //如果首次运行则使用starttime,否则使用数据库中上次任务执行的时间
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         if(sLog==null) {
             firstRun = true;
+            conf.set("yonghui.startTime",sdf.format(startTime)  );
         }else{
             System.out.println(sLog.getSyncTime());
+            conf.set("yonghui.startTime",sdf.format(sLog.getSyncTime()));
         }
 
-//        TestReadWriteParquet.setStartTime(startTime);
-//        TestReadWriteParquet.initFileSys(fuzhouHdfs,conf);
-//        TestReadWriteParquet.setFirstTime(firstRun);
-        conf.set("yonghui.startTime",startTime.toString());
+        //设置HDFS地址和是否首次运行
         conf.set("yonghui.hdfs",fuzhouHdfs);
         conf.set("yonghui.firstTime",firstRun?"true":"false");
 
@@ -100,29 +97,33 @@ public class getTable{
         try {
             int res = ToolRunner.run(conf, new TestReadWriteParquet(), compressArg);
             if (res!=0){
+                deleteTempDir(location);
                 System.exit(1);
             }
-            System.out.println("the runner end:"+res);
+            System.out.println("compress succeed:"+res);
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("the runner exception");
+            deleteTempDir(location);
+            System.out.println("got exception");
             System.exit(1);
         }
 
         Path fuzhouPath = new Path("hdfs://10.1.53.205:8020" + destAppendix);
         Path chongQinPath = new Path("hdfs://10.216.126.151:8020" + destAppendix);
 
-        String shellString =  "hadoop distcp -m 1400 "+ fuzhouPath.toString() + location + " " + chongQinPath.toString() +location;
+        String shellString =  "hadoop distcp -Ddfs.replication=3 "+ fuzhouPath.toString() + location + " " + chongQinPath.toString() +location;
         System.out.println(shellString);
 
         try{
             Process process = Runtime.getRuntime().exec(shellString);
             int exitValue = process.waitFor();
             if (exitValue!=0){
+                deleteTempDir(location);
                 System.exit(1);
             }
         }catch (Exception e){
             e.printStackTrace();
+            deleteTempDir(location);
             System.exit(1);
         }
 
@@ -133,9 +134,15 @@ public class getTable{
             sLog.setSyncTime(startTime);
             System.out.println("update records: "+syncOrm.UpdateItem(sLog));
         }
+        //如果没有设置keep则删除
+        if (!args[1].equals("keep")){
+            deleteTempDir(location);
+        }
+    }
 
+    public static void deleteTempDir(String location) throws IOException{
         //删除tmp目录
-        shellString = "hadoop fs -rmr " + destAppendix+location;
+        String shellString = "hadoop fs -rmr " + destAppendix+location;
         System.out.println(shellString);
         Process process = Runtime.getRuntime().exec(shellString);
         try{
@@ -143,7 +150,6 @@ public class getTable{
         }catch (Exception e){
             e.printStackTrace();
         }
-
     }
 }
 
