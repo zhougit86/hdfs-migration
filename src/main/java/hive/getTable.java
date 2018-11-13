@@ -58,7 +58,6 @@ public class getTable{
         conf.set("mapred.textoutputformat.ignoreseparator", "true");
         conf.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
         conf.set("mapreduce.framework.name","yarn");
-//        conf.set("yarn.resourcemanager.address", "10.1.53.205:8032");
         conf.set("fs.defaultFS", "hdfs://10.1.53.205:8020");
     }
 
@@ -138,6 +137,7 @@ public class getTable{
         if (!args[1].equals("keep")){
             deleteTempDir(location);
         }
+        System.exit(0);
     }
 
     public static void deleteTempDir(String location) throws IOException{
