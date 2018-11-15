@@ -19,6 +19,8 @@ public interface syncLogMapper {
 
     int updateByPrimaryKey(syncLog record);
 
+    LinkedList<syncLog> selectAllSyncLog();
+
     // tableDir的末尾不要有斜杠（即'/'号）
     LinkedList<syncLog> selectByTableDir(String tableDir);
 

@@ -5,12 +5,13 @@
         <id column="sync_id" property="syncId" jdbcType="INTEGER"/>
         <result column="path" property="path" jdbcType="VARCHAR"/>
         <result column="isDir" property="isdir" jdbcType="BIT"/>
+        <result column="length" property="length" jdbcType="BIGINT"/>
         <result column="isSynchronized" property="issynchronized" jdbcType="BIT"/>
         <result column="mod_Time" property="modTime" jdbcType="TIMESTAMP"/>
         <result column="sync_Time" property="syncTime" jdbcType="TIMESTAMP"/>
     </resultMap>
     <sql id="Base_Column_List">
-    sync_id, path, isDir, isSynchronized, mod_Time, sync_Time
+    sync_id, path, isDir, length, isSynchronized, mod_Time, sync_Time
   </sql>
     <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Integer">
         select
@@ -29,6 +30,13 @@
         <include refid="Base_Column_List"/>
         from sync_log
         where path like concat(#{tableDir}, '/', '%')
+    </select>
+
+    <select id="selectAllSyncLog" resultMap="BaseResultMap" parameterType="java.lang.String">
+        select
+        <include refid="Base_Column_List"/>
+        from sync_log
+        where isSynchronized is NULL OR isSynchronized = 0
     </select>
 
     <delete id="deleteSyncLogsByTableDir" parameterType="java.lang.String">
@@ -60,6 +68,9 @@
             <if test="isdir != null">
                 isDir,
             </if>
+            <if test="length != null">
+                length,
+            </if>
             <if test="issynchronized != null">
                 isSynchronized,
             </if>
@@ -80,6 +91,9 @@
             <if test="isdir != null">
                 #{isdir,jdbcType=BIT},
             </if>
+            <if test="length != null">
+                #{length,jdbcType=BIGINT},
+            </if>
             <if test="issynchronized != null">
                 #{issynchronized,jdbcType=BIT},
             </if>
@@ -99,6 +113,9 @@
             </if>
             <if test="isdir != null">
                 isDir = #{isdir,jdbcType=BIT},
+            </if>
+            <if test="length != null">
+                length = #{length,jdbcType=BIGINT},
             </if>
             <if test="issynchronized != null">
                 isSynchronized = #{issynchronized,jdbcType=BIT},

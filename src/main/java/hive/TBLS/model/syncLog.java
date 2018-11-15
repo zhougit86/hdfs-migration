@@ -9,6 +9,16 @@ public class syncLog {
 
     private Boolean isdir;
 
+    public Long getLength() {
+        return length;
+    }
+
+    public void setLength(Long length) {
+        this.length = length;
+    }
+
+    private Long length;
+
     private Boolean issynchronized;
 
     private Date modTime;
