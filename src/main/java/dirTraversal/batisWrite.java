@@ -1,9 +1,6 @@
 package dirTraversal;
 
-import com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.ibatis.io.Resources;
-import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
@@ -14,8 +11,6 @@ import dirTraversal.dao.DirDao;
 import java.io.IOException;
 import java.io.Reader;
 import java.sql.Timestamp;
-import java.util.Date;
-import java.util.Map;
 
 /**
  * Created by zhou1 on 2018/10/30.

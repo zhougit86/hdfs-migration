@@ -1,6 +1,5 @@
 package hive;
 
-import hive.TBLS.model.dirInfo;
 import hive.TBLS.model.syncLog;
 import hive.TBLS.persistence.dao.syncLogMapper;
 import org.apache.ibatis.io.Resources;

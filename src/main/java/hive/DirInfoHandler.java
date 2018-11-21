@@ -1,7 +1,6 @@
 package hive;
 
 import hive.TBLS.persistence.dao.dirInfoMapper;
-import hive.TBLS.persistence.dao.syncLogMapper;
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;

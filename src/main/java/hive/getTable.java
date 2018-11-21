@@ -69,22 +69,26 @@ public class getTable{
         Date startTime = new Date();
         System.out.println(startTime);
 
-        String tableName = args[0];
+//        String tableName = args[0];
 
         //通过在TBDS的HIVE数据库的HIVE metadata获取该表的路径
-        String location = HiveMetaQuerier.getLocation(tableName);
-
+//        String location = HiveMetaQuerier.getLocation(tableName);
+        String location = args[0];
 
         // Find a file in case a directory was passed
         FileSystem fileSys= FileSystem.get(new URI(fuzhouHdfs),conf);
-        if (fileSys.exists(new Path(fuzhouHdfs+destAppendix+location))){
-            System.out.println("the output already Exists");
-            System.exit(2);
-        }
+//        if (fileSys.exists(new Path(fuzhouHdfs+destAppendix+args[0]))){
+//            System.out.println("the output already Exists");
+//            System.exit(2);
+//        }
+
 
         boolean firstRun = false;
         SyncLoggerOrm syncOrm = new SyncLoggerOrm();
-        syncLog sLog = syncOrm.getSyncLogByName(tableName);
+        syncLog sLog = syncOrm.getSyncLogByName(location);
+
+        //遇到文件夹会进行递归
+//        conf.set("mapreduce.input.fileinputformat.input.dir.recursive","true");
 
         //如果首次运行则使用starttime,否则使用数据库中上次任务执行的时间
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
@@ -99,16 +103,16 @@ public class getTable{
 
         //设置HDFS地址和是否首次运行
         conf.set("yonghui.hdfs",fuzhouHdfs);
-        conf.set("yonghui.firstTime",firstRun?"true":"false");
         conf.set("mapreduce.job.queuename",taskQueue);
         conf.set("yonghui.name",
                 String.format("%s_%s_%s","compress" ,args[0],
                         sdf.format(startTime))
         );
 
+
         //获取压缩MR任务的参数
         String[] compressArg = new String[]{fuzhouHdfs, location, destAppendix+location ,"gzip" };
-
+        System.out.println(compressArg);
         try {
             int res = ToolRunner.run(conf, new TestReadWriteParquet(), compressArg);
             if (res!=0){
@@ -148,15 +152,15 @@ public class getTable{
 
         //更新完同步数据库
         if(firstRun){
-            syncOrm.initSyncLog(tableName,startTime);
+            syncOrm.initSyncLog(location,startTime);
         }else {
             sLog.setSyncTime(startTime);
             System.out.println("update records: "+syncOrm.UpdateItem(sLog));
         }
         //如果没有设置keep则删除
-        if (!args[1].equals("keep")){
-            deleteTempDir(location);
-        }
+//        if (!args[1].equals("keep")){
+//            deleteTempDir(location);
+//        }
         System.exit(0);
     }
 

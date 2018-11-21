@@ -144,16 +144,16 @@ public class myReader extends RecordReader<LongWritable, Text> {
         int newSize = 0;
 
         while(this.getFilePosition() <= this.end || this.in.needAdditionalRecordAfterSplit()) {
-            if(this.pos == 0L) {
-                newSize = this.skipUtfByteOrderMark();
-//                System.out.println("value");
-//                System.out.println(this.value.getLength());
-            } else {
+//            if(this.pos == 0L) {
+//                newSize = this.skipUtfByteOrderMark();
+////                System.out.println("value");
+////                System.out.println(this.value.getLength());
+//            } else {
                 newSize = this.in.readLine(this.value, this.maxLineLength, this.maxBytesToConsume(this.pos));
 //                System.out.println("value");
 //                System.out.println(this.value);
                 this.pos += (long)newSize;
-            }
+//            }
 
             if(newSize == 0 || newSize < this.maxLineLength) {
                 break;

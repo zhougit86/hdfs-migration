@@ -27,7 +27,7 @@ public class myUncompressedSplitReader extends mySplitLineReader {
     protected int fillBuffer(InputStream in, byte[] buffer, boolean inDelimiter) throws IOException {
         int maxBytesToRead = buffer.length;
         if(this.totalBytesRead < this.splitLength) {
-            System.out.println("hahahahahah");
+//            System.out.println("hahahahahah");
             long leftBytesForSplit = this.splitLength - this.totalBytesRead;
             if(leftBytesForSplit <= 2147483647L) {
                 maxBytesToRead = Math.min(maxBytesToRead, (int)leftBytesForSplit);
@@ -43,7 +43,7 @@ public class myUncompressedSplitReader extends mySplitLineReader {
                 this.needAdditionalRecord = true;
             }
         }
-        System.out.printf("*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$%b,%d\n",inDelimiter ,maxBytesToRead );
+//        System.out.printf("*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$%b,%d\n",inDelimiter ,maxBytesToRead );
 //        System.out.println(new String(buffer)+"\n\n");
         if(bytesRead > 0) {
             this.totalBytesRead += (long)bytesRead;
@@ -55,7 +55,7 @@ public class myUncompressedSplitReader extends mySplitLineReader {
     public int readLine(Text str, int maxLineLength, int maxBytesToConsume) throws IOException {
         int bytesRead = 0;
         if(!this.finished) {
-            System.out.printf("----------------totalRead:%d,splitLen:%d-------------\n",this.totalBytesRead,this.splitLength);
+//            System.out.printf("----------------totalRead:%d,splitLen:%d-------------\n",this.totalBytesRead,this.splitLength);
             if(this.totalBytesRead > this.splitLength) {
                 this.finished = true;
             }

@@ -27,6 +27,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper.Context;
 
 import org.apache.parquet.Log;
+import org.apache.parquet.Strings;
 import org.apache.parquet.hadoop.codec.CodecConfig;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
@@ -36,42 +37,6 @@ public class TestReadWriteParquet  extends Configured implements Tool {
     public static class MyfileOutputFormat extends TextOutputFormat<Void,Text> {
         private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance();
         //获取文件时间
-        private static FileSystem fSys = null;
-
-        static class parseErr extends Exception{}
-        private static Date getDateFromName(String fileName) throws parseErr {
-            String[] fileNameParts = fileName.split("\\$");
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
-
-            if (fileNameParts.length<4){
-                throw new parseErr();
-            }
-            try{
-                return sdf.parse(fileNameParts[2]);
-            }catch (ParseException e){
-                LOG.error("*****yonghui*****:wrong output format."+fileName);
-                throw new parseErr();
-            }
-        }
-        private static String getOriginName(String fileName) throws parseErr {
-            String[] fileNameParts = fileName.split("\\$");
-
-            if (fileNameParts.length<4){
-                throw new parseErr();
-            }
-            return fileNameParts[0];
-        }
-        public static void setFileSystem(String fsPath,Configuration conf){
-            try{
-                fSys = FileSystem.get(new URI(fsPath),conf);
-            }catch (Exception e){
-                e.printStackTrace();
-            }
-        }
-        private CompressionCodecName getCodec(TaskAttemptContext taskAttemptContext) {
-            return CodecConfig.from(taskAttemptContext).getCodec();
-        }
-
 
         public RecordWriter<Void, Text> getRecordWriter(TaskAttemptContext job) throws IOException, InterruptedException {
             Configuration conf = job.getConfiguration();
@@ -97,25 +62,31 @@ public class TestReadWriteParquet  extends Configured implements Tool {
             }
         }
 
-        public Path getDefaultWorkFile(TaskAttemptContext context, String extension) throws IOException {
-            FileOutputCommitter committer = (FileOutputCommitter)this.getOutputCommitter(context);
-            String JobPath = committer.getJobAttemptPath(context).toString();
-            JobPath = JobPath.substring(0,JobPath.indexOf("_temporary"));
-            LOG.info("*****yonghui*****:Output path: "+JobPath);
-
-            //下列函数第二个参数就是文件名
-            Path pathOfFile = new Path(JobPath, getUniqueFile(context, "000000_0", extension));
-            return pathOfFile;
-        }
+//        public Path getDefaultWorkFile(TaskAttemptContext context, String extension) throws IOException {
+//            FileOutputCommitter committer = (FileOutputCommitter)this.getOutputCommitter(context);
+//            String JobPath = committer.getJobAttemptPath(context).toString();
+//            JobPath = JobPath.substring(0,JobPath.indexOf("_temporary"));
+//            LOG.info("*****yonghui*****:Output path: "+JobPath);
+//
+//            //下列函数第二个参数就是文件名
+//            Path pathOfFile = new Path(JobPath, getUniqueFile(context, "000000_0", extension));
+//            return pathOfFile;
+//        }
 
         public static synchronized String getUniqueFile(TaskAttemptContext context, String name, String extension){
-            TaskID taskId = context.getTaskAttemptID().getTaskID();
-            int partition = taskId.getId();
-
+//            TaskID taskId = context.getTaskAttemptID().getTaskID();
+//            int partition = taskId.getId();
             StringBuilder result = new StringBuilder();
+
+            if (extension.length()==0){
+                name = name.replace(".gz","");
+                result.append(name);
+                return result.toString();
+            }
+
             result.append(name);
-            result.append('$');
-            result.append(NUMBER_FORMAT.format((long)partition));
+//            result.append('$');
+//            result.append(NUMBER_FORMAT.format((long)partition));
             result.append(extension);
             return result.toString();
         }
@@ -167,34 +138,42 @@ public class TestReadWriteParquet  extends Configured implements Tool {
             Configuration conf = context.getConfiguration();
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
             Date startTime = null;
-            try{
-                startTime = sdf.parse(conf.get("yonghui.startTime"));
-            }catch (Exception e){
-                e.printStackTrace();
-            }
-            boolean firstTime =  conf.get("yonghui.firstTime").equals("true")?true:false;
 
-            //获取文件时间
-            FileSystem fSys = null;
-            try{
-                fSys = FileSystem.get(new URI(conf.get("yonghui.hdfs")),conf);
-            }catch (URISyntaxException e){
-                e.printStackTrace();
-            }
+
 
 
             Path SplitPath = ((FileSplit) inputSplit).getPath();
-            FileStatus fStatus = fSys.getFileStatus(SplitPath);
-            Date fileModTime = new Date(fStatus.getModificationTime());
 
+//            System.out.println(SplitPath.toString());
+//            System.out.println(FileInputFormat.getInputPaths(context)[0].toString());
+            String inputDir = FileInputFormat.getInputPaths(context)[0].toString();
+            if (inputDir.charAt(inputDir.length()-1)!='/'){
+                inputDir+="/";
+            }
+            LOG.info("*****yonghui*****:Input path: "+inputDir);
+            final String pathWithDir = fileName.replace(inputDir,"");
 
             //设置文件名
-            final String pathWithDir;
+
             //包括hdfsXXX/input,需要被裁剪的文件路径
-            final int appendLen = FileInputFormat.getInputPaths(context)[0].toString().length()+1;
+//            final int appendLen = FileInputFormat.getInputPaths(context)[0].toString().length()+1;
 
 
-            MyfileOutputFormat tof = new MyfileOutputFormat() ;
+            MyfileOutputFormat tof = new MyfileOutputFormat(){
+                public Path getDefaultWorkFile(TaskAttemptContext context, String extension) throws IOException {
+                    FileOutputCommitter committer = (FileOutputCommitter)this.getOutputCommitter(context);
+                    String JobPath = committer.getJobAttemptPath(context).toString();
+                    JobPath = JobPath.substring(0,JobPath.indexOf("_temporary"));
+                    LOG.info("*****yonghui*****:Output path: "+JobPath);
+                    String filename = getUniqueFile(context, pathWithDir, extension);
+
+
+                    //下列函数第二个参数就是文件名
+                    Path pathOfFile = new Path(JobPath,filename );
+                    LOG.info("*****yonghui*****:Output file: "+pathOfFile);
+                    return pathOfFile;
+                }
+            } ;
             writer = tof.getRecordWriter(context);
 
         }
@@ -262,7 +241,11 @@ public class TestReadWriteParquet  extends Configured implements Tool {
         job.setMapperClass(ReadRequestMap.class);
         job.setNumReduceTasks(0);
 
-//        FileSystem fs = FileSystem.get(new URI(DestHdfs),getConf());
+        FileSystem fileSys = FileSystem.get(new URI(DestHdfs),getConf());
+        if (fileSys.exists(new Path(DestHdfs+outputFile))){
+//            System.out.println("Deleting the output directory");
+            fileSys.delete(new Path(DestHdfs+outputFile));
+        }
 //        FileStatus[] listStatus = fs.listStatus( new Path(args[1]));
 //        filePartitioner.initMap(listStatus);
 //      设置有多少个reduce任务  job.setNumReduceTasks(filePartitioner.initMap(listStatus));
@@ -281,13 +264,15 @@ public class TestReadWriteParquet  extends Configured implements Tool {
 //        MyfileOutputFormat.setWriteSupportClass(job, MySupport.class);
         job.setOutputFormatClass(NullOutputFormat.class);
 
-
+        conf.set("yonghui.compress","uncompress");
         if(compression.equalsIgnoreCase("gzip")) {
 //            codec = CompressionCodecName.GZIP;
+            conf.set("yonghui.compress","gzip");
             MyfileOutputFormat.setOutputCompressorClass(job,GzipCodec.class);
         }
 
         //todo 设置输入输出的路径
+        FileInputFormat.setInputDirRecursive(job,true);
         FileInputFormat.setInputPaths(job, new Path(DestHdfs+inputFile));
         FileOutputFormat.setOutputPath(job, new Path(DestHdfs+outputFile));
         job.waitForCompletion(true);
@@ -309,7 +294,7 @@ public class TestReadWriteParquet  extends Configured implements Tool {
 //        System.out.println(sdf.parse(stStr));
         conf.set("yonghui.startTime",sdf.format(startTime));
         conf.set("yonghui.hdfs",args[0]);
-        conf.set("yonghui.firstTime","true");
+
         conf.set("yonghui.name","haha");
 //        TestReadWriteParquet.setStartTime();
 //        TestReadWriteParquet.initFileSys(args[0],conf);

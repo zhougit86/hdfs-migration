@@ -74,7 +74,7 @@ public class myLineReader implements Closeable {
     }
 
     public int readLine(Text str, int maxLineLength, int maxBytesToConsume) throws IOException {
-        System.out.println("reading compress file");
+//        System.out.println("reading compress file");
         return this.simpleReadLine(str,maxLineLength,maxBytesToConsume);
 //        return this.recordDelimiterBytes != null?this.readCustomLine(str, maxLineLength, maxBytesToConsume):this.readDefaultLine(str, maxLineLength, maxBytesToConsume);
     }
