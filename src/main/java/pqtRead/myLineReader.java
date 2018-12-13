@@ -103,7 +103,6 @@ public class myLineReader implements Closeable {
         long bytesConsumed = 0L;
 
         do {
-            System.out.printf("======================POS:%d,len:%d======================================\n",this.bufferPosn,this.bufferLength);
             int startPosn = this.bufferPosn;
             if(this.bufferPosn >= this.bufferLength) {
                 startPosn = this.bufferPosn = 0;
@@ -112,7 +111,7 @@ public class myLineReader implements Closeable {
                 }
 
                 this.bufferLength = this.fillBuffer(this.in, this.buffer, prevCharCR);
-                System.out.printf("newBuffLen%d\n",this.bufferLength);
+
                 if(this.bufferLength <= 0) {
                     break;
                 }
@@ -154,7 +153,6 @@ public class myLineReader implements Closeable {
         if(bytesConsumed > 2147483647L) {
             throw new IOException("Too many bytes before newline: " + bytesConsumed);
         } else {
-            System.out.printf("===============================consume:%d==========================================\n",(int)bytesConsumed);
             return (int)bytesConsumed;
         }
     }

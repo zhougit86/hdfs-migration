@@ -34,7 +34,7 @@
           </dependency>
         </dependencies>
         <configuration>
-          <configurationFile>src/main/resources/uat/mybatisgenerator/generatorConfig.xml</configurationFile>
+          <configurationFile>src/main/resources/mybatisgenerator/generatorConfig.xml</configurationFile>
           <verbose>true</verbose>
           <overwrite>true</overwrite>
         </configuration>
@@ -51,7 +51,7 @@
             <configuration>
               <filters>
                 <filter>
-                  <artifact>uat:uat</artifact>
+                  <artifact>*:*</artifact>
                   <excludes>
                     <exclude>yarn-default.xml</exclude>
                     <exclude>META-INF/*.SF</exclude>
@@ -62,7 +62,7 @@
               </filters>
               <transformers>
                 <transformer>
-                  <mainClass>hive.getTable</mainClass>
+                  <mainClass>production.getTable</mainClass>
                 </transformer>
                 <transformer>
                   <resource>reference.conf</resource>

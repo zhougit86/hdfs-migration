@@ -3,36 +3,42 @@ package pqtRead;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.text.NumberFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
 
 import com.google.common.base.Charsets;
-import compressFile.compressFile;
+import com.google.common.base.Stopwatch;
+import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.GzipCodec;
+import org.apache.hadoop.mapred.LocatedFileStatusFetcher;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.lib.output.*;
+import org.apache.hadoop.mapreduce.security.TokenCache;
 import org.apache.hadoop.util.ReflectionUtils;
 import  org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Mapper.Context;
-
 import org.apache.parquet.Log;
-import org.apache.parquet.Strings;
-import org.apache.parquet.hadoop.codec.CodecConfig;
-import org.apache.parquet.hadoop.metadata.CompressionCodecName;
+
 
 public class TestReadWriteParquet  extends Configured implements Tool {
     private static final Log LOG = Log.getLog(TestReadWriteParquet.class);
+
+//    public static class MyFilter implements PathFilter{
+//        public boolean accept(Path var1){
+//            return true;
+//        }
+//    }
 
     public static class MyfileOutputFormat extends TextOutputFormat<Void,Text> {
         private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance();
@@ -98,6 +104,128 @@ public class TestReadWriteParquet  extends Configured implements Tool {
         public MyFileInputFormat() {
         }
 
+        private static class MultiPathFilter implements PathFilter {
+            private List<PathFilter> filters;
+
+            public MultiPathFilter(List<PathFilter> filters) {
+                this.filters = filters;
+            }
+
+            public boolean accept(Path path) {
+                Iterator i$ = this.filters.iterator();
+
+                PathFilter filter;
+                do {
+                    if(!i$.hasNext()) {
+                        return true;
+                    }
+
+                    filter = (PathFilter)i$.next();
+                } while(filter.accept(path));
+
+                return false;
+            }
+        }
+
+        protected List<FileStatus> listStatus(JobContext job) throws IOException {
+            Path[] dirs = getInputPaths(job);
+            if(dirs.length == 0) {
+                throw new IOException("No input paths specified in job");
+            } else {
+                TokenCache.obtainTokensForNamenodes(job.getCredentials(), dirs, job.getConfiguration());
+                boolean recursive = getInputDirRecursive(job);
+                List<PathFilter> filters = new ArrayList();
+//                filters.add(hiddenFileFilter);
+                PathFilter jobFilter = getInputPathFilter(job);
+                if(jobFilter != null) {
+                    filters.add(jobFilter);
+                }
+
+                PathFilter inputFilter = new MultiPathFilter(filters);
+                List<FileStatus> result = null;
+                int numThreads = job.getConfiguration().getInt("mapreduce.input.fileinputformat.list-status.num-threads", 1);
+                Stopwatch sw = (new Stopwatch()).start();
+                if(numThreads == 1) {
+                    result = this.singleThreadedListStatus(job, dirs, inputFilter, recursive);
+                } else {
+                    Iterable locatedFiles = null;
+
+                    try {
+                        LocatedFileStatusFetcher locatedFileStatusFetcher = new LocatedFileStatusFetcher(job.getConfiguration(), dirs, recursive, inputFilter, true);
+                        locatedFiles = locatedFileStatusFetcher.getFileStatuses();
+                    } catch (InterruptedException var12) {
+                        throw new IOException("Interrupted while getting file statuses");
+                    }
+
+                    result = Lists.newArrayList(locatedFiles);
+                }
+
+                sw.stop();
+//                if(LOG.isDebugEnabled()) {
+//                    LOG.debug("Time taken to get FileStatuses: " + sw.elapsedMillis());
+//                }
+
+                LOG.info("Total input paths to process : " + ((List)result).size());
+                return (List)result;
+            }
+        }
+
+        private List<FileStatus> singleThreadedListStatus(JobContext job, Path[] dirs, PathFilter inputFilter,
+                                                          boolean recursive) throws IOException {
+            List<FileStatus> result = new ArrayList();
+            List<IOException> errors = new ArrayList();
+
+            for(int i = 0; i < dirs.length; ++i) {
+                Path p = dirs[i];
+                FileSystem fs = p.getFileSystem(job.getConfiguration());
+                FileStatus[] matches = fs.globStatus(p, inputFilter);
+                if(matches == null) {
+                    errors.add(new IOException("Input path does not exist: " + p));
+                } else if(matches.length == 0) {
+                    errors.add(new IOException("Input Pattern " + p + " matches 0 files"));
+                } else {
+                    FileStatus[] arr$ = matches;
+                    int len$ = matches.length;
+
+                    label57:
+                    for(int i$ = 0; i$ < len$; ++i$) {
+                        FileStatus globStat = arr$[i$];
+                        if(!globStat.isDirectory()) {
+                            result.add(globStat);
+                        } else {
+                            RemoteIterator iter = fs.listLocatedStatus(globStat.getPath());
+
+                            while(true) {
+                                while(true) {
+                                    LocatedFileStatus stat;
+                                    do {
+                                        if(!iter.hasNext()) {
+                                            continue label57;
+                                        }
+
+                                        stat = (LocatedFileStatus)iter.next();
+                                    } while(!inputFilter.accept(stat.getPath()));
+
+                                    if(recursive && stat.isDirectory()) {
+                                        this.addInputPathRecursively(result, fs, stat.getPath(), inputFilter);
+                                    } else {
+                                        result.add(stat);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if(!errors.isEmpty()) {
+                throw new InvalidInputException(errors);
+            } else {
+                return result;
+            }
+        }
+
+
         @Override
         public boolean isSplitable(JobContext context, Path filename){
             return false;
@@ -116,7 +244,6 @@ public class TestReadWriteParquet  extends Configured implements Tool {
 
             return new myReader(recordDelimiterBytes);
         }
-
 //        protected boolean isSplitable(JobContext context, Path file) {
 //            CompressionCodec codec = (new CompressionCodecFactory(context.getConfiguration())).getCodec(file);
 //            return null == codec?true:codec instanceof SplittableCompressionCodec;
@@ -135,14 +262,12 @@ public class TestReadWriteParquet  extends Configured implements Tool {
             String fileName = ((FileSplit) inputSplit).getPath().toString();
 
             //获取时间
-            Configuration conf = context.getConfiguration();
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
-            Date startTime = null;
-
-
-
-
-            Path SplitPath = ((FileSplit) inputSplit).getPath();
+//            Configuration conf = context.getConfiguration();
+//            SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
+//            Date startTime = null;
+//
+//
+//            Path SplitPath = ((FileSplit) inputSplit).getPath();
 
 //            System.out.println(SplitPath.toString());
 //            System.out.println(FileInputFormat.getInputPaths(context)[0].toString());
@@ -223,61 +348,48 @@ public class TestReadWriteParquet  extends Configured implements Tool {
 
         Configuration conf = getConf();
 
-        //设置压缩格式
-//        CompressionCodecName codec = CompressionCodecName.UNCOMPRESSED;
-//        conf.set("yonghui.compress","uncompress");
-//        if(compression.equalsIgnoreCase("snappy")) {
-//            codec = CompressionCodecName.SNAPPY;
-//            conf.set("yonghui.compress","snappy");
-
-//        LOG.info("Output compression: " + codec);
-
-        //设置map的类和设置任务
+        //设置map的类和设置任务，设置由外部控制程序订的任务名
         Job job = Job.getInstance(conf, "file Compress");
         job.setJobName(conf.get("yonghui.name"));
 
+        //不需要reduce的任务，将其设置为0
         job.setJarByClass(getClass());
-//        job.setJobName(getClass().getName());
         job.setMapperClass(ReadRequestMap.class);
         job.setNumReduceTasks(0);
 
         FileSystem fileSys = FileSystem.get(new URI(DestHdfs),getConf());
+        if (!fileSys.exists(new Path(DestHdfs+inputFile))){
+            fileSys.close();
+            //如果输入文件路径不存在则直接返回
+            return 1;
+        }
         if (fileSys.exists(new Path(DestHdfs+outputFile))){
-//            System.out.println("Deleting the output directory");
             fileSys.delete(new Path(DestHdfs+outputFile));
         }
-//        FileStatus[] listStatus = fs.listStatus( new Path(args[1]));
-//        filePartitioner.initMap(listStatus);
-//      设置有多少个reduce任务  job.setNumReduceTasks(filePartitioner.initMap(listStatus));
-//        job.setPartitionerClass(filePartitioner.class);
-
 
         //设置输入输出格式
-//        ParquetInputFormat.setReadSupportClass(job, GroupReadSupport.class);
         job.setInputFormatClass(MyFileInputFormat.class);
-
-//        GroupWriteSupport.setSchema(schema, getConf());
-//        ParquetOutputFormat.setValidation(getConf(),false);
-//        ParquetOutputFormat.setEnableDictionary(job,false);
-
-
-//        MyfileOutputFormat.setWriteSupportClass(job, MySupport.class);
+        //不用设置outputFormat，直接在map任务中输出
         job.setOutputFormatClass(NullOutputFormat.class);
 
         conf.set("yonghui.compress","uncompress");
         if(compression.equalsIgnoreCase("gzip")) {
-//            codec = CompressionCodecName.GZIP;
             conf.set("yonghui.compress","gzip");
             MyfileOutputFormat.setOutputCompressorClass(job,GzipCodec.class);
         }
 
-        //todo 设置输入输出的路径
+        //设置递归遍历，设置输入输出的路径
         FileInputFormat.setInputDirRecursive(job,true);
         FileInputFormat.setInputPaths(job, new Path(DestHdfs+inputFile));
+//        FileInputFormat.setInputPathFilter(job,MyFilter.class);
         FileOutputFormat.setOutputPath(job, new Path(DestHdfs+outputFile));
-        job.waitForCompletion(true);
-
-        return 0;
+        fileSys.close();
+        if (job.waitForCompletion(true)){
+            return 0;
+        }else {
+            //未知错误
+            return 10;
+        }
     }
 
     public static void main(String[] args) throws Exception {
@@ -313,5 +425,3 @@ public class TestReadWriteParquet  extends Configured implements Tool {
 
     }
 }
-
-
