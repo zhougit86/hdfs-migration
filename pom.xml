@@ -14,9 +14,9 @@
     <packaging>jar</packaging>
 
     <properties>
+        <java.version>1.8</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <java.version>1.8</java.version>
     </properties>
 
     <!--<repositories>-->
@@ -86,7 +86,16 @@
                 <artifactId>mybatis</artifactId>
                 <version>3.3.0</version>
             </dependency>
-            <!--<dependency>-->
+
+        <!-- https://mvnrepository.com/artifact/org.mousio/etcd4j -->
+        <dependency>
+            <groupId>org.mousio</groupId>
+            <artifactId>etcd4j</artifactId>
+            <version>2.16.0</version>
+        </dependency>
+
+
+        <!--<dependency>-->
                 <!--<groupId>org.mybatis.generator</groupId>-->
                 <!--<artifactId>mybatis-generator-core</artifactId>-->
                 <!--<version>1.3.2</version>-->
@@ -172,23 +181,6 @@
 
     <build>
         <plugins>
-            <!--<plugin>-->
-                <!--<groupId>org.apache.avro</groupId>-->
-                <!--<artifactId>avro-maven-plugin</artifactId>-->
-                <!--<version>1.7.7</version>-->
-                <!--<executions>-->
-                    <!--<execution>-->
-                        <!--<phase>generate-sources</phase>-->
-                        <!--<goals>-->
-                            <!--<goal>schema</goal>-->
-                        <!--</goals>-->
-                        <!--<configuration>-->
-                            <!--<sourceDirectory>src/../</sourceDirectory>-->
-                            <!--&lt;!&ndash;<outputDirectory>${project.build.directory}/generated-sources/java</outputDirectory>&ndash;&gt;-->
-                        <!--</configuration>-->
-                    <!--</execution>-->
-                <!--</executions>-->
-            <!--</plugin>-->
 
             <plugin>
                 <groupId>org.mybatis.generator</groupId>
@@ -237,7 +229,7 @@
                                 <filter>
                                     <artifact>*:*</artifact>
                                     <excludes>
-                                        <exclude>yarn-default.xml</exclude>
+                                        <!--<exclude>yarn-default.xml</exclude>-->
                                         <exclude>META-INF/*.SF</exclude>
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>

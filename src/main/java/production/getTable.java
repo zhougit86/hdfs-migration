@@ -35,10 +35,9 @@ public class getTable{
             FileSystem fileSys = FileSystem.get(new URI(ProdHdfs1),conf);
             fileSys.listStatus(new Path(ProdHdfs1+"/"));
             conf.set("fs.defaultFS", ProdHdfs1);
-        }catch (StandbyException e){
-            conf.set("fs.defaultFS", ProdHdfs2);
         }catch (Exception e){
-            e.printStackTrace();
+            System.err.println(e.getClass());
+            conf.set("fs.defaultFS", ProdHdfs2);
         }
         ActiveHdfs = conf.get("fs.defaultFS");
     }
